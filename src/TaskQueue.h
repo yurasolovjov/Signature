@@ -7,12 +7,13 @@
 #include <atomic>
 #include <condition_variable>
 #include <functional>
+#include <Writer.h>
 
 using Element = std::pair<std::unique_ptr<char[]>,size_t>;
 
 class TaskQueue {
 public:
-    TaskQueue(size_t threadsNum = 1);
+    TaskQueue(Writer& writer, size_t threadsNum = 1);
 
     ~TaskQueue();
 
@@ -35,4 +36,5 @@ private:
     std::atomic_bool m_stop;
     std::queue<Element> m_buffers;
     std::exception_ptr m_exception;
+    Writer& m_writer;
 };

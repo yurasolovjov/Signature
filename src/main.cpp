@@ -3,6 +3,7 @@
 #include <thread>
 #include <filesystem>
 #include "TaskQueue.h"
+#include "Writer.h"
 #include <deque>
 
 namespace fs = std::filesystem;
@@ -58,7 +59,16 @@ int main(int argc, char* argv[]) {
 
             std::queue<std::pair<std::unique_ptr<char[]>,size_t>> m_buffers;
 
-            TaskQueue queue(hwConcurency);
+            /** Create writer*/
+            Writer writer(outputFilePath);
+
+            /** One thread for writer*/
+            hwConcurency--;
+
+            /** If system has a one core */
+            hwConcurency = std::max<uint32_t >(hwConcurency,1);
+
+            TaskQueue queue(writer, hwConcurency);
 
             while (inputFile->good()) {
                 auto buffer = std::unique_ptr<char[]>(new char[sizeBlock]);
@@ -71,6 +81,7 @@ int main(int argc, char* argv[]) {
             }
 
             queue.wait();
+
             auto end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double, std::milli> elapsed = end - start;
 

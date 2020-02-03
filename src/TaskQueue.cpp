@@ -3,7 +3,8 @@
 #include "TaskQueue.h"
 
 
-TaskQueue::TaskQueue(size_t threadsNum):m_stop(false)
+TaskQueue::TaskQueue(Writer& writer, size_t threadsNum):
+m_writer(writer),m_stop(false)
 {
     for (int i=0; i < threadsNum; i++){
         m_workers.emplace_back(&TaskQueue::pull, this);
@@ -36,9 +37,7 @@ void TaskQueue::pull() {
                     crc.process_bytes(element.first.get(), size);
                 }
 
-                uint32_t crc32 = crc.checksum();
-                std::cout<<crc32<<std::endl;
-//                m_writer.Push(crc32);
+                m_writer.push(std::move(crc.checksum()));
 
             } else if (m_stop || m_buffers.empty()) {
                 break;
