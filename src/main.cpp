@@ -45,7 +45,10 @@ int main(int argc, char* argv[]) {
         std::cout << "Hardware concurency: " << std::to_string(hwConcurency) << std::endl;
 
 
+
         try {
+
+            auto start = std::chrono::high_resolution_clock::now();
             /** Open the input file*/
             auto inputFile = std::make_unique<std::ifstream>(inputFilePath, std::ios::binary);
 
@@ -68,6 +71,10 @@ int main(int argc, char* argv[]) {
             }
 
             queue.wait();
+            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double, std::milli> elapsed = end - start;
+
+            std::cout << "Time elapsed: " << elapsed.count() <<" milliseconds"<< std::endl;
         }
         catch (std::runtime_error& e){
             std::cerr<<e.what()<<std::endl;
