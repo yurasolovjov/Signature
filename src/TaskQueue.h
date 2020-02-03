@@ -9,11 +9,11 @@
 #include <functional>
 #include <Writer.h>
 
-using Element = std::pair<std::unique_ptr<char[]>,size_t>;
+using Task = std::function<void(void)>;
 
 class TaskQueue {
 public:
-    TaskQueue(Writer& writer, size_t threadsNum = 1);
+    TaskQueue(const size_t threadsNum = 1);
 
     ~TaskQueue();
 
@@ -22,7 +22,7 @@ public:
     TaskQueue(TaskQueue &&other) = delete;
     TaskQueue &operator=(TaskQueue &&other) = delete;
 
-    void push(Element&& element);
+    void push(Task&& element);
     void wait();
     void checkException();
 
@@ -34,7 +34,6 @@ private:
     std::mutex m_mutex;
     std::condition_variable m_cv;
     std::atomic_bool m_stop;
-    std::queue<Element> m_buffers;
+    std::queue<Task> m_tasks;
     std::exception_ptr m_exception;
-    Writer& m_writer;
 };

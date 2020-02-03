@@ -5,6 +5,7 @@
 #include "TaskQueue.h"
 #include "Writer.h"
 #include <deque>
+#include <boost/crc.hpp>
 
 namespace fs = std::filesystem;
 
@@ -57,27 +58,77 @@ int main(int argc, char* argv[]) {
                 throw std::runtime_error("Input file is not opened");
             }
 
-            std::queue<std::pair<std::unique_ptr<char[]>,size_t>> m_buffers;
+            /** Opens the output file*/
+            auto output = std::make_unique<std::ofstream>(outputFilePath, std::ios::binary | std::ios_base::out);
 
-            /** Create writer*/
-            Writer writer(outputFilePath);
-
-            /** One thread for writer*/
-            hwConcurency--;
+            if (!output) {
+                throw std::runtime_error("Output file is not available");
+            }
 
             /** If system has a one core */
             hwConcurency = std::max<uint32_t >(hwConcurency,1);
 
-            TaskQueue queue(writer, hwConcurency);
+            TaskQueue queue(hwConcurency);
+
+            /**/
+            std::mutex mutexRead;
+            std::mutex mutexWrite;
+            std::mutex mutexFile;
+
+            std::vector<uint32_t> outBuffer;
 
             while (inputFile->good()) {
-                auto buffer = std::unique_ptr<char[]>(new char[sizeBlock]);
-                /** Read from file to buffer */
-                inputFile->read(buffer.get(), sizeBlock);
-                size_t gcount = inputFile->gcount();
+
+                auto processing = [&mutexRead,&mutexWrite,&inputFile,&queue,&sizeBlock,&outBuffer,&output,&mutexFile](){
+
+                    auto buffer = std::unique_ptr<char[]>(new char[sizeBlock]);
+
+                    size_t gcount = 0;
+
+                    {
+                        /** Read from file to buffer */
+                        std::lock_guard _lock(mutexRead);
+
+                        if(!inputFile->good()){
+                            return;
+                        }
+
+                        inputFile->read(buffer.get(), sizeBlock);
+                        gcount = inputFile->gcount();
+                    }
+
+                    /** Mutex is free*/
+                    boost::crc_32_type crc;
+                    crc.process_bytes(buffer.get(), gcount);
+
+                    {
+                        std::lock_guard _lock(mutexWrite);
+                        outBuffer.push_back(crc.checksum());
+
+                    }
+                };
+
+                auto writeToFile = [&mutexWrite,&outBuffer,&output,&mutexFile](){
+
+                    std::lock_guard _lock(mutexWrite);
+
+                    if(outBuffer.empty()){
+                        return;
+                    }
+
+                    {
+                        std::lock_guard _lockFile(mutexFile);
+                        output->write(reinterpret_cast<char *>(outBuffer.data()),
+                                      outBuffer.size() * sizeof(uint32_t));
+                    }
+                };
+
+
+                queue.push(processing);
+                queue.push(writeToFile);
+
                 /** Check internal exception */
                 queue.checkException();
-                queue.push(std::make_pair(std::move(buffer), gcount));
             }
 
             queue.wait();

@@ -3,8 +3,8 @@
 #include "TaskQueue.h"
 
 
-TaskQueue::TaskQueue(Writer& writer, size_t threadsNum):
-m_writer(writer),m_stop(false)
+TaskQueue::TaskQueue(const size_t threadsNum):
+m_stop(false)
 {
     for (int i=0; i < threadsNum; i++){
         m_workers.emplace_back(&TaskQueue::pull, this);
@@ -13,33 +13,31 @@ m_writer(writer),m_stop(false)
 
 void TaskQueue::pull() {
 
-    while(!m_stop || !m_buffers.empty()){
+    while(!m_stop || !m_tasks.empty()){
 
         std::unique_lock _lock(m_mutex);
 
         m_cv.wait(_lock,[&]()->bool
         {
-            return (!m_buffers.empty() || m_stop );
+            return (!m_tasks.empty() || m_stop );
         });
 
         try {
-            if(!m_buffers.empty()){
+            if(!m_tasks.empty()){
                 boost::crc_32_type crc;
 
                 {
                     /** Memory will delete*/
-                    auto element = std::move(m_buffers.front());
-                    m_buffers.pop();
+                    auto task = std::move(m_tasks.front());
+                    m_tasks.pop();
+
                     /** Unlock mutex*/
                     _lock.unlock();
 
-                    size_t size = element.second;
-                    crc.process_bytes(element.first.get(), size);
+                    task();
                 }
 
-                m_writer.push(std::move(crc.checksum()));
-
-            } else if (m_stop || m_buffers.empty()) {
+            } else if (m_stop || m_tasks.empty()) {
                 break;
             }
         }
@@ -63,9 +61,9 @@ void TaskQueue::wait(){
     }
 }
 
-void TaskQueue::push(Element&& element) {
+void TaskQueue::push(Task&& element) {
     std::lock_guard _lock(m_mutex);
-    m_buffers.emplace(std::move(element));
+    m_tasks.emplace(std::move(element));
     m_cv.notify_all();
 }
 
