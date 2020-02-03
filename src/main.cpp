@@ -3,7 +3,6 @@
 #include <thread>
 #include <filesystem>
 #include "TaskQueue.h"
-#include "Writer.h"
 #include <deque>
 #include <boost/crc.hpp>
 
@@ -46,11 +45,10 @@ int main(int argc, char* argv[]) {
         std::cout << "Size block: " << std::to_string(sizeBlock) << std::endl;
         std::cout << "Hardware concurency: " << std::to_string(hwConcurency) << std::endl;
 
-
-
         try {
 
             auto start = std::chrono::high_resolution_clock::now();
+
             /** Open the input file*/
             auto inputFile = std::make_unique<std::ifstream>(inputFilePath, std::ios::binary);
 
@@ -68,17 +66,21 @@ int main(int argc, char* argv[]) {
             /** If system has a one core */
             hwConcurency = std::max<uint32_t >(hwConcurency,1);
 
+            /** Thread pool */
             TaskQueue queue(hwConcurency);
 
-            /**/
+            /** Mutex for read operation with file*/
             std::mutex mutexRead;
+            /** Mutex for operation with stack*/
             std::mutex mutexWrite;
+            /** Mutex for write operation with file*/
             std::mutex mutexFile;
-
+            /** Middle buffer for output*/
             std::vector<uint32_t> outBuffer;
 
             while (inputFile->good()) {
 
+                /** Lambda is reading data from input file, compute crc32 and write result to middle buffer*/
                 auto processing = [&mutexRead,&mutexWrite,&inputFile,&queue,&sizeBlock,&outBuffer,&output,&mutexFile](){
 
                     auto buffer = std::unique_ptr<char[]>(new char[sizeBlock]);
@@ -108,6 +110,7 @@ int main(int argc, char* argv[]) {
                     }
                 };
 
+                /** Lambda is writing result from middle buffer to output file */
                 auto writeToFile = [&mutexWrite,&outBuffer,&output,&mutexFile](){
 
                     std::lock_guard _lock(mutexWrite);
@@ -120,10 +123,15 @@ int main(int argc, char* argv[]) {
                         std::lock_guard _lockFile(mutexFile);
                         output->write(reinterpret_cast<char *>(outBuffer.data()),
                                       outBuffer.size() * sizeof(uint32_t));
+
                     }
+
+                    /** Clear data from buffer*/
+                    outBuffer.clear();
                 };
 
 
+                /** Push tasks to threads` poll */
                 queue.push(processing);
                 queue.push(writeToFile);
 

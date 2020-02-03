@@ -7,7 +7,6 @@
 #include <atomic>
 #include <condition_variable>
 #include <functional>
-#include <Writer.h>
 
 using Task = std::function<void(void)>;
 
