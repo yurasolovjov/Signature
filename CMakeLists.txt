@@ -19,7 +19,12 @@ set(SOURCE_FILES
         src/TaskQueue.cpp
         src/TaskQueue.h
         src/ArgParser.cpp
-        src/ArgParser.h )
+        src/ArgParser.h
+        src/Reader.cpp
+        src/Reader.h
+        src/Writer.cpp
+        src/Writer.h
+        )
 
 if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
