@@ -64,7 +64,7 @@ void TaskQueue::wait(){
 void TaskQueue::push(Task&& element) {
     std::lock_guard _lock(m_mutex);
     m_tasks.emplace(std::move(element));
-    m_cv.notify_all();
+    m_cv.notify_one();
 }
 
 void TaskQueue::checkException() {
