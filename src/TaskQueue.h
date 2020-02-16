@@ -13,9 +13,7 @@ using Task = std::function<void(void)>;
 class TaskQueue {
 public:
     TaskQueue(const size_t threadsNum = 1);
-
     ~TaskQueue();
-
     TaskQueue(const TaskQueue &&other) = delete;
     TaskQueue &operator=(const TaskQueue &&other) = delete;
     TaskQueue(TaskQueue &&other) = delete;

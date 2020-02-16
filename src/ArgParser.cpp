@@ -8,8 +8,7 @@ ArgParser::ArgParser(int argc, char** argv) :
         m_sizeBlock(0),
         m_hwConcurency(0),
         m_inFilePath(""),
-        m_outFilePath(""),
-        m_verbose(false)
+        m_outFilePath("")
 {
 
     po::options_description desc("short description: ");
@@ -18,8 +17,7 @@ ArgParser::ArgParser(int argc, char** argv) :
             ("help,h","help \n")
             ("input,i",po::value<std::string>()->required(),"Input file")
             ("output,o", po::value<std::string>()->required(), "Output file")
-            ("size-block,s", po::value<uint32_t>()->default_value(1024), "Size block (bytes)")
-            ("verbose,v", po::bool_switch(&m_verbose)->default_value(false), "Verbose");
+            ("size-block,s", po::value<uint32_t>()->default_value(1024), "Size block (bytes)");
 
     po::variables_map vm;
 
@@ -31,10 +29,8 @@ ArgParser::ArgParser(int argc, char** argv) :
     catch (po::error& e)
     {
         std::cout<<desc<<std::endl;
-
         throw std::invalid_argument(e.what());
     }
-
 
     /** Вывод справочного сообщения */
     if (vm.count("help")){

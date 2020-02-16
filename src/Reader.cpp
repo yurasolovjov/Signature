@@ -20,7 +20,6 @@ Reader::Reader(const std::string &path, size_t partSize):
 }
 
 char *Reader::get() const {
-
     char * addr = static_cast<char *>(m_region->get_address()) + m_offset;
 
     if(!addr){
@@ -47,6 +46,5 @@ std::vector<std::pair<char *, size_t>> Reader::getPointers() {
         pair.second = parts.at(i);
         m_offset += parts.at(i);
     }
-
     return result;
 }

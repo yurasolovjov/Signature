@@ -46,9 +46,11 @@ int main(int argc, char* argv[]) {
 
             /** Open the input file*/
             auto reader = Reader(inputFilePath,sizeBlock);
+            /** Get pointers on the memory`s block*/
             auto pointers = reader.getPointers();
             /** Opens the output file*/
-            auto writer = Writer(outputFilePath, fileSize);//becose crc32
+            const size_t outsize = pointers.size() * sizeof(uint32_t);//becose crc32
+            auto writer = Writer(outputFilePath, outsize);
 
             /** If system has a one core */
             hwConcurency = std::max<uint32_t >(hwConcurency,1);

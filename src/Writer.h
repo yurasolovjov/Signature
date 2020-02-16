@@ -8,32 +8,26 @@
 
 using namespace boost::interprocess;
 
-class Reader {
+class Writer {
 public:
 
-    Reader() = delete;
-    Reader(Reader&&) = delete;
-    Reader& operator=(Reader&&) = delete;
+    Writer() = delete;
+    Writer(Writer&&) = delete;
+    Writer& operator=(Writer&&) = delete;
 
     /** @brief Class to split input file on pointers with offset equal part size
      *  @param path input file
      *  @param partSize size of memory`s block
      * */
-    explicit Reader(const std::string& path, size_t partSize = 1024);
+    explicit Writer(const std::string& path,size_t filesize, size_t blockSize = 1024);
 
-    /** @brief Method to split an inpute file on pointers
-     *  @return pair with pointer on memory`s block and block`s size
-     * */
-    std::vector<std::pair<char*,size_t>> getPointers();
-private:
-    char * get() const;
+    /** @brief Method return pointer to the memory`s block*/
+    char * get(uint32_t offset = 0) ;
 
 private:
     std::unique_ptr<file_mapping> m_file;
     std::unique_ptr<mapped_region> m_region;
     size_t m_offset;
-    size_t m_filesize;
-    size_t m_partSize;
-    size_t m_numberOfParts;
+    size_t m_blockSize;
 };
 
